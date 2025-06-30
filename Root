@@ -1,0 +1,69 @@
+#include <iostream>
+#include <cmath>
+#include <TRandom3.h>
+#include <TH1F.h>
+#include <TCanvas.h>
+#include <TLorentzVector.h>
+
+using namespace std;
+
+void gamma_mass_spectrum() {
+    // Создание гистограммы для спектра эффективных масс
+    TH1F *hMass = new TH1F("hMass", "Spectrum of effective masses of #gamma pairs; M_{#gamma#gamma} (GeV/c^{2}); Counts", 
+                           100, 0, 2.0);
+    
+    // Генератор случайных чисел
+    TRandom3 randGen(0);
+    
+    // Количество событий
+    const int nEvents = 100000;
+    
+    // Энергия в системе центра масс (100 ГэВ на протон)
+    const double E_cm = 200.0; // ГэВ
+    
+    for (int iEvent = 0; iEvent < nEvents; iEvent++) {
+        // Генерируем два гамма-кванта
+        // Углы вылета в сферических координатах
+        double theta1 = randGen.Uniform(0, TMath::Pi());
+        double phi1 = randGen.Uniform(0, 2*TMath::Pi());
+        double theta2 = randGen.Uniform(0, TMath::Pi());
+        double phi2 = randGen.Uniform(0, 2*TMath::Pi());
+        
+        // Энергии гамма-квантов (примерное распределение)
+        double E1 = randGen.Exp(0.5); // Средняя энергия 0.5 ГэВ
+        double E2 = randGen.Exp(0.5);
+        
+        // Преобразуем в 4-импульсы
+        TLorentzVector gamma1, gamma2;
+        gamma1.SetPxPyPzE(E1*sin(theta1)*cos(phi1), 
+                         E1*sin(theta1)*sin(phi1), 
+                         E1*cos(theta1), 
+                         E1);
+        
+        gamma2.SetPxPyPzE(E2*sin(theta2)*cos(phi2), 
+                         E2*sin(theta2)*sin(phi2), 
+                         E2*cos(theta2), 
+                         E2);
+        
+        // Вычисляем эффективную массу пары гамма-квантов
+        TLorentzVector sum = gamma1 + gamma2;
+        double invMass = sum.M(); // Инвариантная масса
+        
+        // Заполняем гистограмму
+        hMass->Fill(invMass);
+    }
+    
+    // Создаем холст и рисуем гистограмму
+    TCanvas *c1 = new TCanvas("c1", "Gamma pair mass spectrum", 800, 600);
+    hMass->Draw();
+    hMass->SetLineColor(kBlue);
+    hMass->SetLineWidth(2);
+    
+    // Сохраняем результат в файл
+    c1->SaveAs("gamma_mass_spectrum.png");
+    
+    // Выводим статистику
+    cout << "Generated " << nEvents << " events." << endl;
+    cout << "Mean mass: " << hMass->GetMean() << " GeV/c^2" << endl;
+    cout << "RMS: " << hMass->GetRMS() << " GeV/c^2" << endl;
+}
